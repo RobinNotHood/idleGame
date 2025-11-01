@@ -5,7 +5,7 @@ Orchestrates all game systems and manages the game loop
 
 import pygame
 import sys
-from src.config import SCREEN_WIDTH, SCREEN_HEIGHT, FPS, GAME_TITLE, COLORS, UI_PADDING, BUTTON_HEIGHT, BUTTON_WIDTH
+from src.config import SCREEN_WIDTH, SCREEN_HEIGHT, MIN_SCREEN_WIDTH, MIN_SCREEN_HEIGHT, FPS, GAME_TITLE, COLORS, UI_PADDING, BUTTON_HEIGHT, BUTTON_WIDTH
 from src.resources import ResourceManager
 from src.upgrades import UpgradeManager
 from src.ui import UI, Button, UpgradeButton, Panel
@@ -14,12 +14,12 @@ from src.adventures import AdventureManager, ItemScrapbook
 
 
 class Game:
-    """Main game class"""
+    """Main game class with resizable window and dark mode"""
 
     def __init__(self):
         # Initialize Pygame
         pygame.init()
-        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT))
+        self.screen = pygame.display.set_mode((SCREEN_WIDTH, SCREEN_HEIGHT), pygame.RESIZABLE)
         pygame.display.set_caption(GAME_TITLE)
         self.clock = pygame.time.Clock()
         self.running = True
@@ -77,6 +77,18 @@ class Game:
             if event.type == pygame.QUIT:
                 self.running = False
 
+            elif event.type == pygame.VIDEORESIZE:
+                # Handle window resize
+                new_width = max(event.w, MIN_SCREEN_WIDTH)
+                new_height = max(event.h, MIN_SCREEN_HEIGHT)
+                self.screen = pygame.display.set_mode((new_width, new_height), pygame.RESIZABLE)
+                self.ui.resize(new_width, new_height)
+
+            elif event.type == pygame.KEYDOWN:
+                # Toggle dark mode with D key
+                if event.key == pygame.K_d:
+                    self.ui.toggle_dark_mode()
+
             # Let UI handle events first
             if self.ui.handle_event(event):
                 continue
@@ -88,8 +100,12 @@ class Game:
     def handle_home_events(self, event):
         """Handle events on the home screen (Milo interaction)"""
         if event.type == pygame.MOUSEBUTTONDOWN and event.button == 1:
-            # Check if clicking on Milo area
-            milo_rect = pygame.Rect(SCREEN_WIDTH // 2 - 150, SCREEN_HEIGHT // 2 - 150, 300, 300)
+            # Check if clicking on Milo area (responsive to window size)
+            milo_rect = pygame.Rect(
+                self.ui.screen_width // 2 - 150,
+                self.ui.screen_height // 2 - 150,
+                300, 300
+            )
             if milo_rect.collidepoint(event.pos):
                 # Generate inspiration
                 inspiration = self.resources.click_hobby()
@@ -100,6 +116,9 @@ class Game:
         """Update game state"""
         # Update resources
         self.resources.update(dt)
+
+        # Update UI (for button animations)
+        self.ui.update(dt)
 
         # Update Milo animation
         self.milo_animation_timer += dt
@@ -144,7 +163,7 @@ class Game:
 
     def draw_navigation(self):
         """Draw navigation buttons"""
-        nav_y = SCREEN_HEIGHT - BUTTON_HEIGHT - UI_PADDING
+        nav_y = self.ui.screen_height - BUTTON_HEIGHT - UI_PADDING
         nav_buttons = [
             ("Home", "home"),
             ("Upgrades", "upgrades"),
@@ -154,9 +173,9 @@ class Game:
             ("Scrapbook", "scrapbook")
         ]
 
-        button_width = 150
+        button_width = 130
         total_width = button_width * len(nav_buttons) + UI_PADDING * (len(nav_buttons) - 1)
-        start_x = (SCREEN_WIDTH - total_width) // 2
+        start_x = (self.ui.screen_width - total_width) // 2
 
         # Clear old nav buttons
         self.ui.buttons = [b for b in self.ui.buttons if not hasattr(b, 'is_nav')]
@@ -165,7 +184,7 @@ class Game:
             x = start_x + i * (button_width + UI_PADDING)
 
             # Highlight current screen
-            color = COLORS['golden_yellow'] if screen == self.current_screen else COLORS['warm_orange']
+            color = COLORS['accent'] if screen == self.current_screen else COLORS['button']
 
             btn = Button(x, nav_y, button_width, BUTTON_HEIGHT - 10,
                          label,
@@ -183,28 +202,34 @@ class Game:
     def draw_home_screen(self):
         """Draw the main home screen with Milo"""
         # Title
-        title = self.ui.title_font.render("Milo's Cozy Adventures", True, COLORS['deep_brown'])
-        title_rect = title.get_rect(centerx=SCREEN_WIDTH // 2, top=100)
+        title = self.ui.title_font.render("Milo's Cozy Adventures", True, COLORS['text'])
+        title_rect = title.get_rect(centerx=self.ui.screen_width // 2, top=100)
         self.screen.blit(title, title_rect)
 
+        # Subtitle (dark mode hint)
+        subtitle = "Press 'D' to toggle dark mode"
+        subtitle_surface = self.ui.small_font.render(subtitle, True, COLORS['text_secondary'])
+        subtitle_rect = subtitle_surface.get_rect(centerx=self.ui.screen_width // 2, top=title_rect.bottom + 5)
+        self.screen.blit(subtitle_surface, subtitle_rect)
+
         # Milo area (clickable)
-        milo_center_x = SCREEN_WIDTH // 2
-        milo_center_y = SCREEN_HEIGHT // 2
+        milo_center_x = self.ui.screen_width // 2
+        milo_center_y = self.ui.screen_height // 2
 
         # Draw Milo (simple representation - a cozy circle with features)
         self.draw_milo(milo_center_x, milo_center_y)
 
         # Instruction text
         instruction = "Click on Milo to gain Inspiration!"
-        inst_surface = self.ui.medium_font.render(instruction, True, COLORS['text_dark'])
-        inst_rect = inst_surface.get_rect(centerx=SCREEN_WIDTH // 2, top=milo_center_y + 180)
+        inst_surface = self.ui.medium_font.render(instruction, True, COLORS['text'])
+        inst_rect = inst_surface.get_rect(centerx=self.ui.screen_width // 2, top=milo_center_y + 180)
         self.screen.blit(inst_surface, inst_rect)
 
         # Stats panel
-        stats_panel = Panel(UI_PADDING, SCREEN_HEIGHT - 250, 350, 150, "Progress")
+        stats_panel = Panel(UI_PADDING, self.ui.screen_height - 250, 350, 150, "Progress")
         stats_panel.draw(self.screen, self.ui.medium_font)
 
-        stats_y = SCREEN_HEIGHT - 210
+        stats_y = self.ui.screen_height - 210
         self.ui.draw_text(self.screen, f"Adventures: {self.resources.adventures_completed}",
                           UI_PADDING + 20, stats_y, self.ui.small_font)
         self.ui.draw_text(self.screen, f"Total Warmth: {int(self.resources.total_warmth_earned)}",
@@ -213,45 +238,45 @@ class Game:
                           UI_PADDING + 20, stats_y + 60, self.ui.small_font)
 
     def draw_milo(self, x, y):
-        """Draw Milo character (simplified)"""
-        # Base color - brown for Milo's fur
-        base_color = COLORS['soft_brown']
-        accent_color = COLORS['tan']
+        """Draw Milo character (simplified) - works in both light and dark mode"""
+        # Base color - brown for Milo's fur (always consistent)
+        base_color = COLORS['milo_base']
+        accent_color = COLORS['milo_accent']
 
         # Body (large circle)
         body_radius = 80
         pygame.draw.circle(self.screen, base_color, (x, y), body_radius)
-        pygame.draw.circle(self.screen, COLORS['deep_brown'], (x, y), body_radius, 3)
+        pygame.draw.circle(self.screen, COLORS['border'], (x, y), body_radius, 3)
 
         # Face patch (lighter)
         face_radius = 50
         pygame.draw.circle(self.screen, accent_color, (x, y + 10), face_radius)
 
         # Eyes
-        eye_color = COLORS['golden_yellow']
+        eye_color = COLORS['accent']
         left_eye = (x - 25, y - 10)
         right_eye = (x + 25, y - 10)
         pygame.draw.circle(self.screen, eye_color, left_eye, 12)
         pygame.draw.circle(self.screen, eye_color, right_eye, 12)
-        pygame.draw.circle(self.screen, COLORS['deep_brown'], left_eye, 6)
-        pygame.draw.circle(self.screen, COLORS['deep_brown'], right_eye, 6)
+        pygame.draw.circle(self.screen, COLORS['border'], left_eye, 6)
+        pygame.draw.circle(self.screen, COLORS['border'], right_eye, 6)
 
         # Nose
         nose_points = [(x, y + 15), (x - 8, y + 5), (x + 8, y + 5)]
-        pygame.draw.polygon(self.screen, COLORS['deep_brown'], nose_points)
+        pygame.draw.polygon(self.screen, COLORS['border'], nose_points)
 
         # Ears
         left_ear = (x - 60, y - 60)
         right_ear = (x + 60, y - 60)
         pygame.draw.circle(self.screen, base_color, left_ear, 25)
         pygame.draw.circle(self.screen, base_color, right_ear, 25)
-        pygame.draw.circle(self.screen, COLORS['deep_brown'], left_ear, 25, 2)
-        pygame.draw.circle(self.screen, COLORS['deep_brown'], right_ear, 25, 2)
+        pygame.draw.circle(self.screen, COLORS['border'], left_ear, 25, 2)
+        pygame.draw.circle(self.screen, COLORS['border'], right_ear, 25, 2)
 
         # Interaction effect
         if self.milo_is_interacting:
             # Draw sparkles around Milo
-            sparkle_color = COLORS['golden_yellow']
+            sparkle_color = COLORS['accent']
             for i in range(6):
                 angle = (self.milo_animation_timer * 3 + i * 60) % 360
                 import math
@@ -260,34 +285,35 @@ class Game:
                 pygame.draw.circle(self.screen, sparkle_color, (sparkle_x, sparkle_y), 5)
 
     def draw_upgrades_screen(self):
-        """Draw the upgrades screen"""
+        """Draw the upgrades screen - compact for easy scanning"""
         # Title
-        self.ui.draw_text(self.screen, "Living Space Upgrades", SCREEN_WIDTH // 2 - 150, 100,
-                          self.ui.large_font, COLORS['deep_brown'])
+        self.ui.draw_text(self.screen, "Upgrades", self.ui.screen_width // 2 - 50, 100,
+                          self.ui.large_font, COLORS['text'])
 
         # Get warmth and inspiration upgrades
         warmth_upgrades = self.upgrades.get_available_upgrades(self.resources, 'warmth')
         inspiration_upgrades = self.upgrades.get_available_upgrades(self.resources, 'inspiration')
 
         # Draw warmth upgrades (left column)
-        self.draw_upgrade_column("Cozy Home", warmth_upgrades, UI_PADDING, 170, SCREEN_WIDTH // 2 - UI_PADDING - 20)
+        self.draw_upgrade_column("Cozy Home", warmth_upgrades, UI_PADDING, 160, self.ui.screen_width // 2 - UI_PADDING - 20)
 
         # Draw inspiration upgrades (right column)
         self.draw_upgrade_column("Skills & Hobbies", inspiration_upgrades,
-                                  SCREEN_WIDTH // 2 + 20, 170, SCREEN_WIDTH // 2 - UI_PADDING - 20)
+                                  self.ui.screen_width // 2 + 20, 160, self.ui.screen_width // 2 - UI_PADDING - 20)
 
     def draw_upgrade_column(self, title, upgrades, x, y, width):
-        """Draw a column of upgrades"""
-        panel = Panel(x, y - 40, width, 30, title, COLORS['warm_orange'])
+        """Draw a column of upgrades - compact list"""
+        panel = Panel(x, y - 40, width, 30, title, COLORS['button'])
         panel.draw(self.screen, self.ui.medium_font)
 
         current_y = y + 10
+        button_height = 40  # Compact buttons
 
         for upgrade in upgrades:
             if not upgrade.can_purchase(self.resources) and upgrade.current_level >= upgrade.max_level:
                 continue  # Don't show maxed upgrades that can't be repeated
 
-            btn = UpgradeButton(x + 10, current_y, width - 20, BUTTON_HEIGHT,
+            btn = UpgradeButton(x + 10, current_y, width - 20, button_height,
                                 upgrade,
                                 lambda u=upgrade: self.purchase_upgrade(u),
                                 self.resources)
@@ -295,13 +321,13 @@ class Game:
             btn.draw(self.screen, self.ui.small_font, self.ui.small_font)
             self.ui.add_button(btn)
 
-            # Draw description
-            desc_y = current_y + BUTTON_HEIGHT + 25
-            self.ui.draw_multiline_text(self.screen, upgrade.description,
-                                         x + 15, desc_y, width - 30,
-                                         self.ui.small_font, COLORS['soft_brown'])
+            # Draw effect description next to button (compact)
+            desc_text = upgrade.description[:50] + "..." if len(upgrade.description) > 50 else upgrade.description
+            desc_surface = self.ui.small_font.render(desc_text, True, COLORS['text_secondary'])
+            desc_rect = desc_surface.get_rect(left=x + 15, top=current_y + button_height + 3)
+            self.screen.blit(desc_surface, desc_rect)
 
-            current_y += BUTTON_HEIGHT + 70
+            current_y += button_height + 30  # Compact spacing
 
     def purchase_upgrade(self, upgrade):
         """Purchase an upgrade"""

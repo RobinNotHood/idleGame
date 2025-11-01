@@ -6,23 +6,51 @@ Defines all game constants, colors, and settings
 # Screen settings
 SCREEN_WIDTH = 1280
 SCREEN_HEIGHT = 720
+MIN_SCREEN_WIDTH = 800
+MIN_SCREEN_HEIGHT = 600
 FPS = 60
 GAME_TITLE = "Milo's Cozy Adventures"
 
-# Warm color palette inspired by Milo
-COLORS = {
-    'warm_cream': (255, 250, 235),
-    'soft_brown': (139, 103, 78),
-    'tan': (210, 180, 140),
-    'warm_orange': (255, 160, 100),
-    'golden_yellow': (255, 215, 120),
-    'deep_brown': (101, 67, 33),
-    'soft_white': (250, 245, 240),
-    'text_dark': (80, 60, 50),
-    'text_light': (255, 250, 235),
+# Light theme - Warm color palette inspired by Milo
+COLORS_LIGHT = {
+    'bg': (255, 250, 235),
+    'bg_secondary': (250, 245, 240),
+    'panel': (250, 245, 240),
+    'button': (255, 160, 100),
     'button_hover': (255, 180, 120),
-    'progress_fill': (255, 200, 100),
+    'button_active': (255, 140, 80),
+    'button_disabled': (210, 180, 140),
+    'border': (101, 67, 33),
+    'text': (80, 60, 50),
+    'text_secondary': (139, 103, 78),
+    'text_light': (255, 250, 235),
+    'accent': (255, 215, 120),
+    'success': (100, 200, 100),
+    'milo_base': (139, 103, 78),
+    'milo_accent': (210, 180, 140),
 }
+
+# Dark theme - Modern dark palette with warm accents
+COLORS_DARK = {
+    'bg': (25, 25, 30),
+    'bg_secondary': (35, 35, 42),
+    'panel': (40, 40, 48),
+    'button': (255, 160, 100),
+    'button_hover': (255, 180, 120),
+    'button_active': (255, 140, 80),
+    'button_disabled': (80, 80, 90),
+    'border': (60, 60, 70),
+    'text': (230, 230, 235),
+    'text_secondary': (160, 160, 170),
+    'text_light': (255, 250, 235),
+    'accent': (255, 215, 120),
+    'success': (100, 200, 100),
+    'milo_base': (139, 103, 78),
+    'milo_accent': (210, 180, 140),
+}
+
+# Default to light theme
+COLORS = COLORS_LIGHT
 
 # Resource generation rates (per second)
 BASE_WARMTH_RATE = 1.0
