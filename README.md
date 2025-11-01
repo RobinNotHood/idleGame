@@ -2,6 +2,18 @@
 
 A relaxing idle/incremental game where you help Milo, a friendly dog, live his best cozy life through hobbies, upgrades, and adventures!
 
+## 🎮 [DOWNLOAD & PLAY NOW](https://github.com/RobinNotHood/idleGame/raw/main/dist/MilosCozyAdventures.exe)
+
+**Quick Download:** [MilosCozyAdventures.exe](https://github.com/RobinNotHood/idleGame/raw/main/dist/MilosCozyAdventures.exe) (17 MB)
+- ✅ No installation needed - just download and run!
+- ✅ Works on Windows 10/11
+- ✅ Dark mode included (press 'D')
+- ✅ Resizable window
+
+[See all download options →](DOWNLOAD.md)
+
+---
+
 ## About the Game
 
 **Milo's Cozy Adventures** is a character-driven idle game with a warm, optimistic tone. Guide Milo through his daily activities, upgrade his living space, develop his hobbies, and send him on adventures to collect memories.
