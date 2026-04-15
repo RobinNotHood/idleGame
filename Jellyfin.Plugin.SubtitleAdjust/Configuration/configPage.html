@@ -1,0 +1,210 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <title>Subtitle Adjust</title>
+</head>
+<body>
+    <div id="SubtitleAdjustConfigPage"
+         data-role="page"
+         class="page type-interior pluginConfigurationPage"
+         data-require="emby-input,emby-button,emby-select,emby-checkbox">
+
+        <div data-role="content">
+            <div class="content-primary">
+
+                <form id="SubtitleAdjustConfigForm">
+                    <div class="verticalSection verticalSection-extrabottompadding">
+                        <div class="sectionTitleContainer flex align-items-center">
+                            <h2 class="sectionTitle">Subtitle Adjust</h2>
+                        </div>
+                        <p>
+                            Adjust the position and size of subtitles in the Jellyfin web client.
+                            After saving, reload the web client for changes to take effect.
+                        </p>
+                        <p style="opacity:.75">
+                            <strong>Note:</strong> This plugin exposes a script at
+                            <code>/SubtitleAdjust/ClientScript.js</code>. Load it from your
+                            web client (for example by appending
+                            <code>&lt;script src="/SubtitleAdjust/ClientScript.js"&gt;&lt;/script&gt;</code>
+                            to <code>jellyfin-web/index.html</code>, or via a custom-CSS/JS plugin)
+                            to apply these settings on the client.
+                        </p>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="Enabled" />
+                            <span>Enable subtitle adjustments</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">
+                            Uncheck to disable all style overrides without uninstalling the plugin.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FontSizePercent">
+                            Font size (%)
+                        </label>
+                        <input is="emby-input" type="number" id="FontSizePercent"
+                               min="25" max="400" step="5" />
+                        <div class="fieldDescription">
+                            100 = Jellyfin default. 150 makes subtitles 1.5x larger; 75 makes them smaller.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="BottomOffsetVh">
+                            Bottom offset (vh)
+                        </label>
+                        <input is="emby-input" type="number" id="BottomOffsetVh"
+                               min="0" max="90" step="1" />
+                        <div class="fieldDescription">
+                            Distance of subtitles from the bottom of the video, in percent
+                            of the viewport height. Higher values push subtitles further up.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="HorizontalOffsetVw">
+                            Horizontal offset (vw)
+                        </label>
+                        <input is="emby-input" type="number" id="HorizontalOffsetVw"
+                               min="-50" max="50" step="1" />
+                        <div class="fieldDescription">
+                            Shift subtitles left (negative) or right (positive) from the center,
+                            in percent of the viewport width. 0 keeps them centered.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FontWeight">
+                            Font weight
+                        </label>
+                        <select is="emby-select" id="FontWeight">
+                            <option value="300">Light (300)</option>
+                            <option value="400">Normal (400)</option>
+                            <option value="500">Medium (500)</option>
+                            <option value="600">Semi-bold (600)</option>
+                            <option value="700">Bold (700)</option>
+                            <option value="800">Extra bold (800)</option>
+                        </select>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="TextColor">
+                            Text color
+                        </label>
+                        <input is="emby-input" type="text" id="TextColor"
+                               placeholder="#FFFFFF" />
+                        <div class="fieldDescription">
+                            Any valid CSS color (e.g. <code>#FFFFFF</code>, <code>yellow</code>,
+                            <code>rgb(255, 255, 0)</code>).
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="BackgroundColor">
+                            Background color
+                        </label>
+                        <input is="emby-input" type="text" id="BackgroundColor"
+                               placeholder="rgba(0, 0, 0, 0.5)" />
+                        <div class="fieldDescription">
+                            Background behind the subtitle text. Use
+                            <code>transparent</code> to disable the background.
+                        </div>
+                    </div>
+
+                    <div class="inputContainer">
+                        <label class="inputLabel inputLabelUnfocused" for="FontFamily">
+                            Font family
+                        </label>
+                        <input is="emby-input" type="text" id="FontFamily"
+                               placeholder="inherit" />
+                        <div class="fieldDescription">
+                            CSS font-family stack. Leave as <code>inherit</code> to use
+                            the Jellyfin default.
+                        </div>
+                    </div>
+
+                    <div class="checkboxContainer checkboxContainer-withDescription">
+                        <label>
+                            <input is="emby-checkbox" type="checkbox" id="TextShadow" />
+                            <span>Text shadow for readability</span>
+                        </label>
+                        <div class="fieldDescription checkboxFieldDescription">
+                            Adds a subtle dark shadow behind each character so subtitles
+                            stay legible against bright backgrounds.
+                        </div>
+                    </div>
+
+                    <div>
+                        <button is="emby-button" type="submit"
+                                class="raised button-submit block emby-button">
+                            <span>Save</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <script type="text/javascript">
+            (function () {
+                var SubtitleAdjustConfig = {
+                    pluginUniqueId: 'c5e1b9e5-3b9c-4f35-9b24-8f8f6f7a4b12'
+                };
+
+                function loadConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(SubtitleAdjustConfig.pluginUniqueId)
+                        .then(function (config) {
+                            page.querySelector('#Enabled').checked = !!config.Enabled;
+                            page.querySelector('#FontSizePercent').value = config.FontSizePercent;
+                            page.querySelector('#BottomOffsetVh').value = config.BottomOffsetVh;
+                            page.querySelector('#HorizontalOffsetVw').value = config.HorizontalOffsetVw;
+                            page.querySelector('#FontWeight').value = String(config.FontWeight);
+                            page.querySelector('#TextColor').value = config.TextColor || '';
+                            page.querySelector('#BackgroundColor').value = config.BackgroundColor || '';
+                            page.querySelector('#FontFamily').value = config.FontFamily || 'inherit';
+                            page.querySelector('#TextShadow').checked = !!config.TextShadow;
+                            Dashboard.hideLoadingMsg();
+                        });
+                }
+
+                function saveConfig(page) {
+                    Dashboard.showLoadingMsg();
+                    ApiClient.getPluginConfiguration(SubtitleAdjustConfig.pluginUniqueId)
+                        .then(function (config) {
+                            config.Enabled = page.querySelector('#Enabled').checked;
+                            config.FontSizePercent = parseInt(page.querySelector('#FontSizePercent').value, 10);
+                            config.BottomOffsetVh = parseInt(page.querySelector('#BottomOffsetVh').value, 10);
+                            config.HorizontalOffsetVw = parseInt(page.querySelector('#HorizontalOffsetVw').value, 10);
+                            config.FontWeight = parseInt(page.querySelector('#FontWeight').value, 10);
+                            config.TextColor = page.querySelector('#TextColor').value || '#FFFFFF';
+                            config.BackgroundColor = page.querySelector('#BackgroundColor').value || 'transparent';
+                            config.FontFamily = page.querySelector('#FontFamily').value || 'inherit';
+                            config.TextShadow = page.querySelector('#TextShadow').checked;
+
+                            ApiClient.updatePluginConfiguration(SubtitleAdjustConfig.pluginUniqueId, config)
+                                .then(Dashboard.processPluginConfigurationUpdateResult);
+                        });
+                }
+
+                document
+                    .querySelector('#SubtitleAdjustConfigPage')
+                    .addEventListener('pageshow', function () {
+                        loadConfig(this);
+                    });
+
+                document
+                    .querySelector('#SubtitleAdjustConfigForm')
+                    .addEventListener('submit', function (e) {
+                        saveConfig(document.querySelector('#SubtitleAdjustConfigPage'));
+                        e.preventDefault();
+                        return false;
+                    });
+            })();
+        </script>
+    </div>
+</body>
+</html>
