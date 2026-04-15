@@ -1,0 +1,113 @@
+name: Release plugin
+
+on:
+  push:
+    tags:
+      - "v*.*.*.*"
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Plugin version (e.g. 1.0.0.0)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Resolve version
+        id: ver
+        run: |
+          if [ -n "${{ inputs.version }}" ]; then
+            echo "version=${{ inputs.version }}" >> "$GITHUB_OUTPUT"
+          else
+            TAG="${GITHUB_REF_NAME#v}"
+            echo "version=$TAG" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Stamp version into csproj
+        run: |
+          sed -i "s|<AssemblyVersion>.*</AssemblyVersion>|<AssemblyVersion>${{ steps.ver.outputs.version }}</AssemblyVersion>|" Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+          sed -i "s|<FileVersion>.*</FileVersion>|<FileVersion>${{ steps.ver.outputs.version }}</FileVersion>|" Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+          sed -i "s|<Version>.*</Version>|<Version>${{ steps.ver.outputs.version }}</Version>|" Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+
+      - name: Stamp version into meta.json
+        run: |
+          sed -i "s|\"version\": \".*\"|\"version\": \"${{ steps.ver.outputs.version }}\"|" Jellyfin.Plugin.SubtitleAdjust/meta.json
+          sed -i "s|\"timestamp\": \".*\"|\"timestamp\": \"$(date -u +%Y-%m-%dT%H:%M:%SZ)\"|" Jellyfin.Plugin.SubtitleAdjust/meta.json
+
+      - name: Build
+        run: |
+          dotnet restore Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+          dotnet build   Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj -c Release --no-restore
+
+      - name: Package plugin
+        id: pkg
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          ZIPNAME="subtitle-adjust-${VERSION}.zip"
+          mkdir -p dist/pkg
+          cp Jellyfin.Plugin.SubtitleAdjust/bin/Release/net8.0/Jellyfin.Plugin.SubtitleAdjust.dll dist/pkg/
+          cp Jellyfin.Plugin.SubtitleAdjust/meta.json dist/pkg/
+          (cd dist/pkg && zip -r "../${ZIPNAME}" .)
+          CHECKSUM=$(md5sum "dist/${ZIPNAME}" | awk '{print $1}')
+          echo "zipname=${ZIPNAME}" >> "$GITHUB_OUTPUT"
+          echo "checksum=${CHECKSUM}" >> "$GITHUB_OUTPUT"
+          echo "zippath=dist/${ZIPNAME}" >> "$GITHUB_OUTPUT"
+
+      - name: Update manifest.json
+        run: |
+          VERSION="${{ steps.ver.outputs.version }}"
+          CHECKSUM="${{ steps.pkg.outputs.checksum }}"
+          ZIPNAME="${{ steps.pkg.outputs.zipname }}"
+          REPO="${{ github.repository }}"
+          TIMESTAMP="$(date -u +%Y-%m-%dT%H:%M:%SZ)"
+
+          python3 <<PY
+          import json, os
+          path = "manifest.json"
+          data = json.load(open(path))
+          entry = data[0]
+          new_version = {
+              "version": "${VERSION}",
+              "changelog": "Automated release ${VERSION}.",
+              "targetAbi": "10.9.0.0",
+              "sourceUrl": f"https://github.com/${REPO}/releases/download/v${VERSION}/${ZIPNAME}",
+              "checksum": "${CHECKSUM}",
+              "timestamp": "${TIMESTAMP}",
+          }
+          entry.setdefault("versions", [])
+          entry["versions"] = [v for v in entry["versions"] if v.get("version") != new_version["version"]]
+          entry["versions"].insert(0, new_version)
+          json.dump(data, open(path, "w"), indent=4)
+          PY
+
+      - name: Commit updated manifest
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add manifest.json Jellyfin.Plugin.SubtitleAdjust/meta.json Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+          git commit -m "Release v${{ steps.ver.outputs.version }}" || echo "No manifest changes to commit"
+          DEFAULT_BRANCH="${{ github.event.repository.default_branch }}"
+          git push origin HEAD:"${DEFAULT_BRANCH}" || echo "Nothing to push"
+
+      - name: Create GitHub release
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: v${{ steps.ver.outputs.version }}
+          name: v${{ steps.ver.outputs.version }}
+          files: ${{ steps.pkg.outputs.zippath }}
+          generate_release_notes: true

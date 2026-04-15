@@ -1,0 +1,40 @@
+name: Build plugin
+
+on:
+  push:
+    branches: [main, master]
+  pull_request:
+    branches: [main, master]
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: "8.0.x"
+
+      - name: Restore
+        run: dotnet restore Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
+
+      - name: Build
+        run: dotnet build Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj -c Release --no-restore
+
+      - name: Package plugin
+        run: |
+          mkdir -p dist/pkg
+          cp Jellyfin.Plugin.SubtitleAdjust/bin/Release/net8.0/Jellyfin.Plugin.SubtitleAdjust.dll dist/pkg/
+          cp Jellyfin.Plugin.SubtitleAdjust/meta.json dist/pkg/
+          cd dist/pkg
+          zip -r ../subtitle-adjust.zip .
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: subtitle-adjust-plugin
+          path: dist/subtitle-adjust.zip

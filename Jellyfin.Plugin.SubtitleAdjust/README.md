@@ -27,12 +27,25 @@ tag if the SPA removes it on navigation, so the overrides persist.
 
 ## Installation
 
+### Option 1 — Add as a plugin repository (recommended)
+
+1. In Jellyfin, go to **Dashboard → Plugins → Repositories → New Repository**.
+2. **Repository URL**:
+   ```
+   https://raw.githubusercontent.com/RobinNotHood/idleGame/main/manifest.json
+   ```
+3. **Dashboard → Plugins → Catalog**, install **Subtitle Adjust**, restart Jellyfin.
+4. Open **Dashboard → Plugins → Subtitle Adjust** and adjust the values to
+   taste, then click **Save**.
+
+### Option 2 — Manual install
+
 1. Build the plugin:
    ```bash
    dotnet publish -c Release Jellyfin.Plugin.SubtitleAdjust/Jellyfin.Plugin.SubtitleAdjust.csproj
    ```
-2. Copy `Jellyfin.Plugin.SubtitleAdjust.dll` into your Jellyfin server's
-   `plugins/SubtitleAdjust_1.0.0.0/` directory.
+2. Copy `Jellyfin.Plugin.SubtitleAdjust.dll` and `meta.json` into your
+   Jellyfin server's `plugins/SubtitleAdjust_1.0.0.0/` directory.
 3. Restart Jellyfin.
 4. Open the Jellyfin dashboard → **Plugins** → **Subtitle Adjust** and adjust
    the values to taste, then click **Save**.
