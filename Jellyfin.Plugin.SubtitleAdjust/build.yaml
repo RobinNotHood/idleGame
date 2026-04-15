@@ -1,0 +1,14 @@
+name: "Subtitle Adjust"
+guid: "c5e1b9e5-3b9c-4f35-9b24-8f8f6f7a4b12"
+version: "1.0.0.0"
+targetAbi: "10.9.0.0"
+framework: "net8.0"
+overview: "Adjust subtitle position and size in the Jellyfin web client."
+description: >
+  A Jellyfin server plugin that lets administrators control how subtitles
+  are rendered in the web client: font size, vertical position, horizontal
+  offset, text and background color, font weight and text shadow.
+category: "General"
+owner: "self-hosted"
+artifacts:
+  - "Jellyfin.Plugin.SubtitleAdjust.dll"

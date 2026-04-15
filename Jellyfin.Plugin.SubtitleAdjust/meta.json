@@ -1,0 +1,12 @@
+{
+    "category": "General",
+    "changelog": "Initial release.",
+    "description": "Adjust subtitle position and size in the Jellyfin web client.",
+    "guid": "c5e1b9e5-3b9c-4f35-9b24-8f8f6f7a4b12",
+    "name": "Subtitle Adjust",
+    "overview": "Adjust subtitle position, size, color and style in the Jellyfin web client.",
+    "owner": "self-hosted",
+    "targetAbi": "10.9.0.0",
+    "timestamp": "2026-04-15T00:00:00Z",
+    "version": "1.0.0.0"
+}
